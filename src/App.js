@@ -2,125 +2,60 @@ import React, { useRef, useEffect } from "react";
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-import ArcGISMap from "@arcgis/core/Map";
-import DictionaryRenderer from "@arcgis/core/renderers/DictionaryRenderer";
 import MapView from "@arcgis/core/views/MapView";
+import BaseMapGallery from '@arcgis/core/widgets/BasemapGallery';
 import esriConfig from '@arcgis/core/config.js';
 import Map from "@arcgis/core/Map";
-import "./App.css";
+import { 
+   popupTrials, 
+   popupTrailheads, 
+   popupOpenspaces, 
+   treeTemplate, 
+   popupTemplate, 
+   attributes,
+   simpleFillSymbol,
+   point
+} from './components/PopUpTemplates';
+import { apieKey } from "./envVariables";
 
 function App() {
   esriConfig.assetsPath = './assets'; 
-  esriConfig.apiKey = process.env.REACT_APP_API_KEY;
+  esriConfig.apiKey = apieKey;
   const mapDiv = useRef(null);
 
   useEffect(() => {
     if (mapDiv.current) {
       const map = new Map({
-      //   basemap: "topo-vector",
          basemap: 'hybrid'
       });
 
       const view = new MapView({
          map,
          container: mapDiv.current,
-            center: [-118.805, 34.027],
-         // center: [view.la, view.lo],
-         zoom: 13,
+         extent: {
+            xmin: -9177811,
+            ymin: 4247000,
+            xmax: -9176791,
+            ymax: 4247784,
+            spatialReference: 102100
+         }
+         //    center: [-118.805, 34.027],
+         //    zoom: 13,
       })        
-
-
-      const popupTrials = {
-         title: "Trail Information",
-         content: [{
-            type: 'media',
-            mediaInfos: [{
-               type: 'column-chart',
-               caption: '',
-               value: {
-                  fields: ["ELEV_MIN", 'ELEV_MAX'],
-                  normalizeField: null,
-                  tooltipField: 'Min and Max elevation values'
-               }
-            }]
-         }]
-      }
 
       const trails = new FeatureLayer({
          url: 'https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails_Styled/FeatureServer/0',
+         // outFiles are just arguments we use in the popupTemplate
+         // check url in browser to see what's available to use
          outFields: ["TRL_NAME","ELEV_GAIN"],
          popupTemplate: popupTrials
       });
-      map.add(trails);
-
-
-      const popupTrailheads = {
-         // things inside {} are just parameters to the variables we pass on the "outFields" FeatureLayer
-         // those variables come from the service url 
-         'title': "Trailhead",
-         'content': `<b>Trail:</b> {TRL_NAME}<br><b>City:</b> {CITY_JUR}<br><b>Cross Street:</b> 
-                     {X_STREET}<br><b>Parking:</b> {PARKING}<br><b>Elevation:</b> {ELEV_FT} ft<br>
-                     <b>Target ID :</b> {TARGET_FID}<br><b>Zip Code:</b> {ZIP_CODE}<br>`
-      }
 
       const trailheadsLayer = new FeatureLayer({
          url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads_Styled/FeatureServer/0",
          outFields: ["TRL_NAME", "CITY_JUR", "X_STREET", "PARKING", "ELEV_FT", "TARGET_FID", 'ZIP_CODE'],
          popupTemplate: popupTrailheads
       });
-      map.add(trailheadsLayer, 0);
-
-
-      const popupOpenspaces = {
-        "title": "{PARK_NAME}",
-        "content": [{
-          "type": "fields",
-          "fieldInfos": [
-            {
-              "fieldName": "AGNCY_NAME",
-              "label": "Agency",
-              "isEditable": true,
-              "tooltip": "",
-              "visible": true,
-              "format": null,
-              "stringFieldOption": "text-box"
-            },
-            {
-              "fieldName": "TYPE",
-              "label": "Type",
-              "isEditable": true,
-              "tooltip": "",
-              "visible": true,
-              "format": null,
-              "stringFieldOption": "text-box"
-            },
-            {
-              "fieldName": "ACCESS_TYP",
-              "label": "Access",
-              "isEditable": true,
-              "tooltip": "",
-              "visible": true,
-              "format": null,
-              "stringFieldOption": "text-box"
-            },
-
-            {
-              "fieldName": "GIS_ACRES",
-              "label": "Acres",
-              "isEditable": true,
-              "tooltip": "",
-              "visible": true,
-              "format": {
-                "places": 2,
-                "digitSeparator": true
-              },
-
-              "stringFieldOption": "text-box"
-            }
-          ]
-        }]
-      };
-
 
       const openspaces = new FeatureLayer({
          url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space_Styled/FeatureServer/0",
@@ -128,83 +63,39 @@ function App() {
          popupTemplate: popupOpenspaces
       });
 
-      map.add(openspaces);
-
       const parksLayer = new FeatureLayer({
          url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space_Styled/FeatureServer/0"
       });
-      map.add(parksLayer, 0);
 
-
-      const treeTemplate = {
-
-      }
       const treesLayer = new FeatureLayer({
          url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Landscape_Trees/FeatureServer/0",
-         outFields: ['STATUS', 'Land_Use', 'Condition'],
+         outFields: ['Status', 'Land_Use', 'Condition', 'Tree_Age'],
          popupTemplate: treeTemplate
       });
 
-      map.add(treesLayer, 0);
-
       const graphicsLayer = new GraphicsLayer();
-      map.add(graphicsLayer);
+      const baseMapGallery = new BaseMapGallery({
+         view
+      });
 
+      view.ui.add(baseMapGallery, { position: 'top-right' });
 
-
-      const point = {
-         type: 'point',
-         longitude: -118.80500,
-         // longitude: -115.2088594,
-
-         latitude: 34.027
-         // latitude: 36.0974872
-
-      }
-
-
-      const simpleMakerSymbol = {
-         // type: 'simple-maker',
-         color: [226, 119, 40],
-         outline: {
-            color: [255, 255, 255],
-            width: 1
-         }
-      }
 
       const pointGraphic = new Graphic({
          geometry: point,
          // symbol: simpleMakerSymbol
       });
 
-      graphicsLayer.add(pointGraphic);
-
-      const simpleFillSymbol = {
-         type: "simple-fill",
-         color: [227, 139, 79, 0.8],
-         outline: {
-            color: [255, 255, 255],
-            width: 1
-         }
-      };
-
-      const popupTemplate = {
-         title: "{Name}",
-         content: "{Description}"
-      }
-      const attributes = {
-         Name: 'Graphic',
-         Description: "I am a polygon"
-      }
-
       const polygonGraphic = new Graphic({
          symbol: simpleFillSymbol,
          attributes,
          popupTemplate
       });
-      graphicsLayer.add(polygonGraphic);
 
-      // map.addMany([  layer2 ]);
+      // you can add multiple instead of adding by one by one
+      graphicsLayer.addMany([pointGraphic, polygonGraphic]);
+      map.addMany([trails, trailheadsLayer, openspaces, parksLayer, treesLayer, graphicsLayer],0);
+
     }
   }, []);
 
