@@ -6,38 +6,29 @@ import ArcGISMap from "@arcgis/core/Map";
 import DictionaryRenderer from "@arcgis/core/renderers/DictionaryRenderer";
 import MapView from "@arcgis/core/views/MapView";
 import esriConfig from '@arcgis/core/config.js';
-
 import Map from "@arcgis/core/Map";
-
 import "./App.css";
-function App() {
 
+function App() {
   esriConfig.assetsPath = './assets'; 
   esriConfig.apiKey = process.env.REACT_APP_API_KEY;
   const mapDiv = useRef(null);
 
   useEffect(() => {
     if (mapDiv.current) {
-      /**
-       * Initialize application
-       */
       const map = new Map({
-        basemap: "arcgis-topographic",
+      //   basemap: "topo-vector",
+         basemap: 'hybrid'
       });
 
       const view = new MapView({
-        map,
-        container: mapDiv.current,
-        center: [-118.805, 34.027],
-        zoom: 13,
-      });
+         map,
+         container: mapDiv.current,
+            center: [-118.805, 34.027],
+         // center: [view.la, view.lo],
+         zoom: 13,
+      })        
 
-
-
-      const popupTrailheads = {
-         'title': "Trailhead",
-         'content': "<b>Trail:</b> {TRL_NAME}<br><b>City:</b> {CITY_JUR}<br><b>Cross Street:</b> {X_STREET}<br><b>Parking:</b> {PARKING}<br><b>Elevation:</b> {ELEV_FT} ft"
-      }
 
       const popupTrials = {
          title: "Trail Information",
@@ -60,13 +51,21 @@ function App() {
          outFields: ["TRL_NAME","ELEV_GAIN"],
          popupTemplate: popupTrials
       });
-
-
       map.add(trails);
+
+
+      const popupTrailheads = {
+         // things inside {} are just parameters to the variables we pass on the "outFields" FeatureLayer
+         // those variables come from the service url 
+         'title': "Trailhead",
+         'content': `<b>Trail:</b> {TRL_NAME}<br><b>City:</b> {CITY_JUR}<br><b>Cross Street:</b> 
+                     {X_STREET}<br><b>Parking:</b> {PARKING}<br><b>Elevation:</b> {ELEV_FT} ft<br>
+                     <b>Target ID :</b> {TARGET_FID}<br><b>Zip Code:</b> {ZIP_CODE}<br>`
+      }
 
       const trailheadsLayer = new FeatureLayer({
          url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads_Styled/FeatureServer/0",
-         outFields: ["TRL_NAME", "CITY_JUR", "X_STREET", "PARKING", "ELEV_FT"],
+         outFields: ["TRL_NAME", "CITY_JUR", "X_STREET", "PARKING", "ELEV_FT", "TARGET_FID", 'ZIP_CODE'],
          popupTemplate: popupTrailheads
       });
       map.add(trailheadsLayer, 0);
@@ -136,14 +135,33 @@ function App() {
       });
       map.add(parksLayer, 0);
 
+
+      const treeTemplate = {
+
+      }
+      const treesLayer = new FeatureLayer({
+         url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Landscape_Trees/FeatureServer/0",
+         outFields: ['STATUS', 'Land_Use', 'Condition'],
+         popupTemplate: treeTemplate
+      });
+
+      map.add(treesLayer, 0);
+
       const graphicsLayer = new GraphicsLayer();
       map.add(graphicsLayer);
+
+
 
       const point = {
          type: 'point',
          longitude: -118.80500,
+         // longitude: -115.2088594,
+
          latitude: 34.027
+         // latitude: 36.0974872
+
       }
+
 
       const simpleMakerSymbol = {
          // type: 'simple-maker',
@@ -158,6 +176,7 @@ function App() {
          geometry: point,
          // symbol: simpleMakerSymbol
       });
+
       graphicsLayer.add(pointGraphic);
 
       const simpleFillSymbol = {
